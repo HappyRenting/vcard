@@ -257,7 +257,10 @@ module Vcard
         current.last.push(f)
 
         unless current.last.first.value? current.last.last.value
-          raise "BEGIN/END mismatch (#{current.last.first.value} != #{current.last.last.value})"
+          raise(
+            ::Vcard::MismatchedBeginEndFieldsError,
+            "Mismatch between BEGIN and END fields: (#{@fields.first.value} != #{@fields.last.value})"
+          )
         end
 
         current.pop

@@ -35,7 +35,10 @@ module Vcard
       @fields = []
 
       fields.each do |f|
-        raise ArgumentError, "fields must be an array of DirectoryInfo::Field objects" unless f.kind_of? DirectoryInfo::Field
+        raise(
+          ::Vcard::ArgumentError,
+          "fields must be an array of DirectoryInfo::Field objects" unless f.kind_of? DirectoryInfo::Field
+        )
         if f.valid?
           @fields << f
         else
@@ -72,7 +75,7 @@ module Vcard
       elsif card.kind_of? IO
         string = card.read(nil)
       else
-        raise ArgumentError, "DirectoryInfo cannot be created from a #{card.type}"
+        raise ::Vcard::ArgumentError, "DirectoryInfo cannot be created from a #{card.type}"
       end
 
       fields = ::Vcard.decode(string)
@@ -233,7 +236,7 @@ module Vcard
     def delete(field)
       case
       when field.name?("BEGIN"), field.name?("END")
-        raise ArgumentError, "Cannot delete BEGIN or END fields."
+        raise ::Vcard::ArgumentError, "Cannot delete BEGIN or END fields."
       else
         @fields.delete field
       end
@@ -256,24 +259,23 @@ module Vcard
     # they are the specified profile.
     def check_begin_end(profile=nil) #:nodoc:
       unless @fields.first
-        raise "No fields to check"
+        raise ::Vcard::InvalidEncodingError, "No fields to check"
       end
       unless @fields.first.name? "BEGIN"
-        raise "Needs BEGIN, found: #{@fields.first.encode}"
+        raise ::Vcard::InvalidEncodingError, "Expected BEGIN field, found: #{@fields.first.encode}"
       end
       unless @fields.last.name? "END"
-        raise "Needs END, found: #{@fields.last.encode}"
+        raise ::Vcard::InvalidEncodingError, "Expected END field, found: #{@fields.last.encode}"
       end
       unless @fields.last.value? @fields.first.value
-        raise "BEGIN/END mismatch: (#{@fields.first.value} != #{@fields.last.value}"
+        raise ::Vcard::MismatchedBeginEndFieldsError, "Mismatch between BEGIN and END fields: (#{@fields.first.value} != #{@fields.last.value})"
       end
       if profile
         if ! @fields.first.value? profile
-          raise "Mismatched profile"
+          raise ::Vcard::UnsupportedError, "Mismatched profile"
         end
       end
       true
     end
   end
 end
-

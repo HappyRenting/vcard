@@ -218,7 +218,7 @@ module Vcard
         begin
           new(line)
         rescue ::Vcard::InvalidEncodingError => e
-          raise ArgumentError, e.to_s
+          raise ::Vcard::ArgumentError, e.to_s
         end
       end
 
@@ -253,7 +253,7 @@ module Vcard
         if width.zero?
           l + nl
         elsif width <= 1
-          raise ArgumentError, "#{width} is too narrow"
+          raise ::Vcard::ArgumentError, "#{width} is too narrow"
         else
           # Wrap to width
           l.scan(/\A.{,#{width}}|.{1,#{width - 1}}/).join("#{nl} ") + nl
@@ -614,11 +614,10 @@ module Vcard
         @line = line
         self
       rescue ::Vcard::InvalidEncodingError => e
-        raise ArgumentError, e.to_s
+        raise ::Vcard::ArgumentError, e.to_s
       end
 
       private :mutate
     end
   end
 end
-
