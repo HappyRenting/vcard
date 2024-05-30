@@ -35,10 +35,9 @@ module Vcard
       @fields = []
 
       fields.each do |f|
-        raise(
-          ::Vcard::ArgumentError,
-          "fields must be an array of DirectoryInfo::Field objects" unless f.kind_of? DirectoryInfo::Field
-        )
+        unless f.kind_of? DirectoryInfo::Field
+          raise ::Vcard::ArgumentError, "fields must be an array of DirectoryInfo::Field objects"
+        end
         if f.valid?
           @fields << f
         else
