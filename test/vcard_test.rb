@@ -341,10 +341,10 @@ EOF
     card0.delete card0.field('TEL')
     card0.delete card0.field('TEL')
 
-    assert_raises(Vcard::ArgumentError) do
+    assert_raises(Vcard::CannotDeleteFieldError) do
       card0.delete card0.field('END')
     end
-    assert_raises(Vcard::ArgumentError) do
+    assert_raises(Vcard::CannotDeleteFieldError) do
       card0.delete card0.field('BEGIN')
     end
 

@@ -36,7 +36,7 @@ module Vcard
 
       fields.each do |f|
         unless f.kind_of? DirectoryInfo::Field
-          raise ::Vcard::ArgumentError, "fields must be an array of DirectoryInfo::Field objects"
+          raise ::Vcard::InvalidFieldError, "fields must be an array of DirectoryInfo::Field objects"
         end
         if f.valid?
           @fields << f
@@ -74,7 +74,7 @@ module Vcard
       elsif card.kind_of? IO
         string = card.read(nil)
       else
-        raise ::Vcard::ArgumentError, "DirectoryInfo cannot be created from a #{card.type}"
+        raise ::Vcard::UnsupportedError, "DirectoryInfo cannot be created from a #{card.type}"
       end
 
       fields = ::Vcard.decode(string)
@@ -235,7 +235,7 @@ module Vcard
     def delete(field)
       case
       when field.name?("BEGIN"), field.name?("END")
-        raise ::Vcard::ArgumentError, "Cannot delete BEGIN or END fields."
+        raise ::Vcard::CannotDeleteFieldError, "Cannot delete BEGIN or END fields."
       else
         @fields.delete field
       end

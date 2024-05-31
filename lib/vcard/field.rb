@@ -82,22 +82,15 @@ module Vcard
       def Field.value_str(value) # :nodoc:
         line = ""
         case value
-        when Date
-          line << ::Vcard.encode_date(value)
-
-        when Time #, DateTime
-          line << ::Vcard.encode_date_time(value)
-
-        when Array
-          line << value.map { |v| Field.value_str(v) }.join(";")
-
-        when Symbol
-          line << value.to_s
-
+        when Date then line << ::Vcard.encode_date(value)
+        when Time then line << ::Vcard.encode_date_time(value)
+        when Array then line << value.map { |v| Field.value_str(v) }.join(";")
+        when Symbol then line << value.to_s
         else
           # FIXME - somewhere along here, values with special chars need escaping...
           line << value.to_str
         end
+
         line
       end
 
@@ -218,7 +211,7 @@ module Vcard
         begin
           new(line)
         rescue ::Vcard::InvalidEncodingError => e
-          raise ::Vcard::ArgumentError, e.to_s
+          raise ::Vcard::Unencodeable, e.to_s
         end
       end
 
@@ -253,7 +246,7 @@ module Vcard
         if width.zero?
           l + nl
         elsif width <= 1
-          raise ::Vcard::ArgumentError, "#{width} is too narrow"
+          raise ::Vcard::Unencodeable, "#{width} is too narrow"
         else
           # Wrap to width
           l.scan(/\A.{,#{width}}|.{1,#{width - 1}}/).join("#{nl} ") + nl
@@ -452,14 +445,18 @@ module Vcard
       def to_time
         ::Vcard.decode_date_time_list(value).collect do |d|
           # We get [ year, month, day, hour, min, sec, usec, tz ]
-          begin
-            if(d.pop == "Z")
+          if(d.pop == "Z")
+            begin
               Time.gm(*d)
-            else
-              Time.local(*d)
+            rescue ArgumentError => e
+              raise ::Vcard::InvalidEncodingError, "Time.gm(#{d.join(', ')}) failed with #{e.message}"
             end
-          rescue ArgumentError => e
-            raise ::Vcard::InvalidEncodingError, "Time.gm(#{d.join(', ')}) failed with #{e.message}"
+          else
+            begin
+              Time.local(*d)
+            rescue ArgumentError => e
+              raise ::Vcard::InvalidEncodingError, "Time.local(#{d.join(', ')}) failed with #{e.message}"
+            end
           end
         end
       rescue ::Vcard::InvalidEncodingError
@@ -614,7 +611,7 @@ module Vcard
         @line = line
         self
       rescue ::Vcard::InvalidEncodingError => e
-        raise ::Vcard::ArgumentError, e.to_s
+        raise ::Vcard::Unencodeable, e.to_s
       end
 
       private :mutate

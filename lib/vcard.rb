@@ -60,8 +60,10 @@ module Vcard
 
   # Convert a RFC 2425 date into an array of [year, month, day].
   def self.decode_date(v) # :nodoc:
-    raise ::Vcard::InvalidEncodingError, "date not valid (#{v})" unless v =~ Bnf::DATE
-    [$1.to_i, $2.to_i, $3.to_i]
+    raise InvalidEncodingError, "date '#{v}' not valid" unless match = Bnf::DATE.match(v)
+    year, month, day = match.to_a[1..3]
+
+    [year.to_i, month.to_i, day.to_i]
   end
 
   # Convert a RFC 2425 date into a Date object.
@@ -89,18 +91,18 @@ module Vcard
 
   # Convert a RFC 2425 time into an array of [hour,min,sec,secfrac,timezone]
   def self.decode_time(v) # :nodoc:
-    raise ::Vcard::InvalidEncodingError, "time '#{v}' not valid" unless match = Bnf::TIME.match(v)
+    raise InvalidEncodingError, "time '#{v}' not valid" unless match = Bnf::TIME.match(v)
     hour, min, sec, secfrac, tz = match.to_a[1..5]
 
     [hour.to_i, min.to_i, sec.to_i, secfrac ? secfrac.to_f : 0, tz]
   end
 
+  # Convert a [year,mon,day,hour,min,sec,secfrac,timezone] array into a Time object.
   def self.array_datetime_to_time(dtarray) #:nodoc:
-  # We get [year, month, day, hour, min, sec, usec, tz]
     tz = (dtarray.pop == "Z") ? :gm : :local
     Time.send(tz, *dtarray)
   rescue ArgumentError => e
-    raise ::Vcard::InvalidEncodingError, "#{tz} #{e} (#{dtarray.join(', ')})"
+    raise InvalidEncodingError, "#{tz} #{e} (#{dtarray.join(', ')})"
   end
 
   # Convert a RFC 2425 time into an array of Time objects.
@@ -110,7 +112,7 @@ module Vcard
 
   # Convert a RFC 2425 date-time into an array of [year,mon,day,hour,min,sec,secfrac,timezone]
   def self.decode_date_time(v) # :nodoc:
-    raise ::Vcard::InvalidEncodingError, "date-time '#{v}' not valid" unless match = Bnf::DATE_TIME.match(v)
+    raise InvalidEncodingError, "date-time '#{v}' not valid" unless match = Bnf::DATE_TIME.match(v)
     year, month, day, hour, min, sec, secfrac, tz = match.to_a[1..8]
 
     [
@@ -135,7 +137,7 @@ module Vcard
 
   # Convert an RFC2425 INTEGER value into an Integer
   def self.decode_integer(v) # :nodoc:
-    raise ::Vcard::InvalidEncodingError, "integer not valid (#{v})" unless v =~ Bnf::INTEGER
+    raise InvalidEncodingError, "integer not valid (#{v})" unless v =~ Bnf::INTEGER
     v.to_i
   end
 
@@ -211,11 +213,14 @@ module Vcard
   # paramtext  = *SAFE-CHAR
   # quoted-string      = DQUOTE *QSAFE-CHAR DQUOTE
   def self.encode_paramtext(value)
-    if value =~ Bnf::ALL_SAFECHARS
-      value
-    else
-      raise ::Vcard::Unencodable, "paramtext #{value.inspect}"
+    unless value =~ Bnf::ALL_SAFECHARS
+      raise(
+        Unencodable,
+        "Cannot encode paramtext. Invalid characters in '#{value.inspect}'. Only SAFECHARS are allowed."
+      )
     end
+
+    value
   end
 
   def self.encode_paramvalue(value)
@@ -224,7 +229,10 @@ module Vcard
     elsif value =~ Bnf::ALL_QSAFECHARS
       %Q{"#{value}"}
     else
-      raise ::Vcard::Unencodable, "param-value #{value.inspect}"
+      raise(
+        Unencodable,
+        "Cannot encode paramvalue. Invalid characters in '#{value.inspect}'. Only SAFECHARS and QSAFECHARS are allowed."
+      )
     end
   end
 
@@ -258,7 +266,7 @@ module Vcard
 
         unless current.last.first.value? current.last.last.value
           raise(
-            ::Vcard::MismatchedBeginEndFieldsError,
+            MismatchedBeginEndFieldsError,
             "Mismatch between BEGIN and END fields: (#{@fields.first.value} != #{@fields.last.value})"
           )
         end
