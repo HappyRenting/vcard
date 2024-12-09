@@ -450,7 +450,7 @@ module Vcard
         d = $3.to_i
         Line.new( field.group, field.name, Date.new(y, m, d) )
       else
-        raise
+        raise ::Vcard::InvalidEncodingError, "BDAY must be a date"
       end
     end
 
@@ -644,7 +644,7 @@ module Vcard
       elsif card.respond_to? :read
         string = card.read(nil)
       else
-        raise ArgumentError, "Vcard.decode cannot be called with a #{card.type}"
+        raise ::Vcard::UnsupportedError, "Vcard.decode cannot be called with a #{card.type}"
       end
 
       entities = ::Vcard.expand(::Vcard.decode(string))
@@ -652,7 +652,7 @@ module Vcard
       # Since all vCards must have a begin/end, the top-level should consist
       # entirely of entities/arrays, even if its a single vCard.
       if entities.detect { |e| ! e.kind_of? Array }
-        raise "Not a valid vCard"
+        raise ::Vcard::InvalidVcardError, "Not a valid vCard"
       end
 
       vcards = []
@@ -1159,8 +1159,8 @@ module Vcard
       # Warning: It may confuse both humans and software if you add multiple
       # birthdays.
       def birthday=(birthday)
-        if !birthday.respond_to? :month
-          raise ArgumentError, "birthday must be a date or time object."
+        unless birthday.is_a?(Date) || birthday.is_a?(Time)
+          raise ::Vcard::InvalidFieldError, "birthday must be a date or time object."
         end
         delete_if { |l| l.name == "BDAY" }
         @card << ::Vcard::DirectoryInfo::Field.create( "BDAY", birthday );
@@ -1389,4 +1389,3 @@ module Vcard
     end
   end
 end
-
