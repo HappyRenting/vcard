@@ -267,7 +267,7 @@ module Vcard
         unless current.last.first.value? current.last.last.value
           raise(
             MismatchedBeginEndFieldsError,
-            "Mismatch between BEGIN and END fields: (#{@fields.first.value} != #{@fields.last.value})"
+            "Mismatch between BEGIN and END fields: (#{current.last.first.value} != #{current.last.last.value})"
           )
         end
 
